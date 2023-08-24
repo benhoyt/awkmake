@@ -1,0 +1,4 @@
+*.o
+/example/c.c
+/example/prog
+/example/prog.h.gch
