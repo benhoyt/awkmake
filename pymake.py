@@ -23,7 +23,6 @@ def main():
         elif line.strip():
             error(f'illegal line in makefile: {line}')
     ages()  # compute initial ages
-    _print_globals()
     if sys.argv[1] in names:
         if not update(sys.argv[1]):
             print(f'{sys.argv[1]} is up to date')
@@ -65,23 +64,6 @@ def update(n, visited={}):
 def error(msg):
     print(f'error: {msg}', file=sys.stderr)
     sys.exit(1)
-
-def _print_globals():
-    from pprint import pprint
-    print('NAMES:')
-    print(' ', ' '.join(sorted(names)))
-    print('SLIST:')
-    for k, v in sorted(slist.items()):
-        print(f'  {k[0]},{k[1]}: {v}')
-    print('SCNT:')
-    for k, v in sorted(scnt.items()):
-        print(f'  {k}: {v}')
-    print('CMD:')
-    for k, v in sorted(cmd.items()):
-        print(f'  {k}: {v!r}')
-    print('AGE:')
-    for k, v in sorted(age.items()):
-        print(f'  {k}: {v}')
 
 if __name__ == '__main__':
     main()
