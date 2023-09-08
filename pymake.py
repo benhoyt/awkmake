@@ -1,9 +1,9 @@
 import os, re, sys
 
-names = set()  # names of targets
-slist = {}     # slist[target,i] is one of target's sources
-scnt = {}      #   where i is 1..scnt[target]
-cmd = {}       # cmd[target] is the shell command to run
+names = set()  # names of rules (usually output files)
+slist = {}     # slist[name,i] is one of name's sources
+scnt = {}      #   where i is 1..scnt[name]
+cmd = {}       # cmd[name] is the shell command to run
 age = {}       # age[file] is file's age (bigger is older)
 
 def main():
