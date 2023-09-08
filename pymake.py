@@ -1,26 +1,10 @@
-import os
-import re
-import sys
+import os, re, sys
 
-names = set()
-slist = {}  # TODO: change to dict of list?
-scnt = {}
-cmd = {}
-age = {}
-visited = {}
-
-def _print_globals():
-    from pprint import pprint
-    print('NAMES:')
-    pprint(names)
-    print('SLIST:')
-    pprint(slist)
-    print('SCNT:')
-    pprint(scnt)
-    print('CMD:')
-    pprint(cmd)
-    print('AGE:')
-    pprint(age)
+names = set()  # names of targets
+slist = {}     # slist[target,i] is one of target's sources
+scnt = {}      #   where i is 1..scnt[target]
+cmd = {}       # cmd[target] is the shell command to run
+age = {}       # age[file] is file's age (bigger is older)
 
 def main():
     for line in open('makefile'):
@@ -54,14 +38,14 @@ def ages():
         if n not in age:    # if n has not been created
             age[n] = 9999   # make n really old
 
-def update(n):
+def update(n, visited={}):
     if n not in age:
         error(f'{n} does not exist')
     if n not in names:
         return 0
     changed = 0
     visited[n] = 1
-    for i in range(1, scnt[n]+1):
+    for i in range(1, scnt.get(n, 0)+1):
         s = slist[n, i]
         if s not in visited:
             update(s)
@@ -81,6 +65,23 @@ def update(n):
 def error(msg):
     print(f'error: {msg}', file=sys.stderr)
     sys.exit(1)
+
+def _print_globals():
+    from pprint import pprint
+    print('NAMES:')
+    print(' ', ' '.join(sorted(names)))
+    print('SLIST:')
+    for k, v in sorted(slist.items()):
+        print(f'  {k[0]},{k[1]}: {v}')
+    print('SCNT:')
+    for k, v in sorted(scnt.items()):
+        print(f'  {k}: {v}')
+    print('CMD:')
+    for k, v in sorted(cmd.items()):
+        print(f'  {k}: {v!r}')
+    print('AGE:')
+    for k, v in sorted(age.items()):
+        print(f'  {k}: {v}')
 
 if __name__ == '__main__':
     main()
