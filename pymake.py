@@ -1,6 +1,6 @@
 import os, re, sys
 
-slist = {}  # slist[target] is list of target's sources
+slist = {}  # slist[name] is list of rule's sources
 cmd = {}    # cmd[name] is the shell command to run
 age = {}    # age[file] is file's age (larger is older)
 
