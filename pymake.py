@@ -1,12 +1,8 @@
-from collections import defaultdict
 import os, re, sys
 
-names = set()             # names of rules (usually output files)
-slist = {}                # slist[name,i] is one of name's sources
-scnt = defaultdict(int)   #   where i is 1..scnt[name]
-cmd = defaultdict(str)    # cmd[name] is the shell command to run
-age = {}                  # age[file] is file's age (larger is older)
-visited = {}              # tracks visited files in update()
+slist = {}  # slist[target] is list of target's sources
+cmd = {}    # cmd[name] is the shell command to run
+age = {}    # age[file] is file's age (larger is older)
 
 def main():
     for line in open('makefile'):
@@ -14,48 +10,44 @@ def main():
             line = line.replace(':', '')
             fields = line.split()
             nm = fields[0]
-            if nm in names:
+            if nm in slist:
                 error(f'{nm} is multiply defined')
-            names.add(nm)
-            for field in fields[1:]:  # remember targets
-                scnt[nm] += 1
-                slist[nm, scnt[nm]] = field
-        elif line.startswith('\t'):   # remember cmd for
-            cmd[nm] += line           #   current name
+            slist[nm] = fields[1:]    # remember targets
+        elif line.startswith('\t'):   # remember cmd for current name
+            cmd[nm] = cmd.get(nm, '') + line
         elif line.strip():
             error(f'illegal line in makefile: {line}')
     ages()  # compute initial ages
-    if sys.argv[1] in names:
+    if sys.argv[1] in slist:
         if not update(sys.argv[1]):
             print(sys.argv[1], 'is up to date')
     else:
         error(f'{sys.argv[1]} is not in makefile')
 
 def ages():
-    entries = sorted(os.scandir('.'), key=lambda e: e.stat().st_mtime, reverse=True)
+    entries = sorted(os.scandir(), key=lambda e: e.stat().st_mtime, reverse=True)
     for t, entry in enumerate(entries, start=1):
         age[entry.name] = t  # all existing files get an age
-    for n in names:
-        if n not in age:    # if n has not been created
-            age[n] = 9999   # make n really old
+    for n in slist:
+        if n not in age:     # if n has not been created
+            age[n] = 9999    # make n really old
 
-def update(n):
+def update(n, visited={}):
     if n not in age:
         error(f'{n} does not exist')
-    if n not in names:
+    if n not in slist:
         return 0
-    changed = 0
+    changed = False
     visited[n] = 1
-    for i in range(1, scnt.get(n, 0)+1):
-        s = slist[n, i]
+    for s in slist.get(n, []):
         if s not in visited:
             update(s)
         elif visited[s] == 1:
             error(f'{s} and {n} are circularly defined')
         if age[s] <= age[n]:
-            changed += 1
+            changed = True
     visited[n] = 2
-    if changed or n not in scnt:
+    if changed or len(slist.get(n, [])) == 0:
         print(cmd[n], end='')
         os.system(cmd[n])  # execute cmd associated with n
         ages()             # recompute all ages
@@ -64,7 +56,7 @@ def update(n):
     return 0
 
 def error(msg):
-    print(f'error: {msg}', file=sys.stderr)
+    print('error:', msg, file=sys.stderr)
     sys.exit(1)
 
 if __name__ == '__main__':
