@@ -30,7 +30,7 @@ def mtime(n):
 
 def update(n, visited={}):
     ntime = mtime(n)
-    if ntime == 0:
+    if n not in slist and ntime == 0:
         error(f'{n} does not exist')
     if n not in slist:
         return 0
