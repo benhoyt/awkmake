@@ -1,8 +1,7 @@
 import os, re, sys
 
 slist = {}  # slist[name] is list of rule's sources
-cmd = {}    # cmd[name] is the shell command to run
-age = {}    # age[file] is file's age (larger is older)
+cmd = {}    # cmd[name] is shell command to run for rule
 
 def main():
     for line in open('makefile'):
@@ -17,23 +16,21 @@ def main():
             cmd[nm] = cmd.get(nm, '') + line
         elif line.strip():
             error(f'illegal line in makefile: {line}')
-    ages()  # compute initial ages
     if sys.argv[1] in slist:
         if not update(sys.argv[1]):
             print(sys.argv[1], 'is up to date')
     else:
         error(f'{sys.argv[1]} is not in makefile')
 
-def ages():
-    entries = sorted(os.scandir(), key=lambda e: e.stat().st_mtime, reverse=True)
-    for t, entry in enumerate(entries, start=1):
-        age[entry.name] = t  # all existing files get an age
-    for n in slist:
-        if n not in age:     # if n has not been created
-            age[n] = 9999    # make n really old
+def mtime(n):
+    try:
+        return os.stat(n).st_mtime
+    except FileNotFoundError:
+        return 0  # mark as old if it doesn't exist
 
 def update(n, visited={}):
-    if n not in age:
+    ntime = mtime(n)
+    if ntime == 0:
         error(f'{n} does not exist')
     if n not in slist:
         return 0
@@ -44,14 +41,12 @@ def update(n, visited={}):
             update(s)
         elif visited[s] == 1:
             error(f'{s} and {n} are circularly defined')
-        if age[s] <= age[n]:
+        if mtime(s) > ntime:
             changed = True
     visited[n] = 2
     if changed or len(slist.get(n, [])) == 0:
         print(cmd[n], end='')
         os.system(cmd[n])  # execute cmd associated with n
-        ages()             # recompute all ages
-        age[n] = 0         # make n very new
         return 1
     return 0
 
