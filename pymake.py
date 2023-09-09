@@ -1,10 +1,12 @@
+from collections import defaultdict
 import os, re, sys
 
-names = set()  # names of rules (usually output files)
-slist = {}     # slist[name,i] is one of name's sources
-scnt = {}      #   where i is 1..scnt[name]
-cmd = {}       # cmd[name] is the shell command to run
-age = {}       # age[file] is file's age (bigger is older)
+names = set()             # names of rules (usually output files)
+slist = {}                # slist[name,i] is one of name's sources
+scnt = defaultdict(int)   #   where i is 1..scnt[name]
+cmd = defaultdict(str)    # cmd[name] is the shell command to run
+age = {}                  # age[file] is file's age (larger is older)
+visited = {}              # tracks visited files in update()
 
 def main():
     for line in open('makefile'):
@@ -16,16 +18,16 @@ def main():
                 error(f'{nm} is multiply defined')
             names.add(nm)
             for field in fields[1:]:  # remember targets
-                scnt[nm] = scnt.get(nm, 0) + 1
+                scnt[nm] += 1
                 slist[nm, scnt[nm]] = field
-        elif line.startswith('\t'):   # remember cmd for current name
-            cmd[nm] = cmd.get(nm, '') + line
+        elif line.startswith('\t'):   # remember cmd for
+            cmd[nm] += line           #   current name
         elif line.strip():
             error(f'illegal line in makefile: {line}')
     ages()  # compute initial ages
     if sys.argv[1] in names:
         if not update(sys.argv[1]):
-            print(f'{sys.argv[1]} is up to date')
+            print(sys.argv[1], 'is up to date')
     else:
         error(f'{sys.argv[1]} is not in makefile')
 
@@ -37,7 +39,7 @@ def ages():
         if n not in age:    # if n has not been created
             age[n] = 9999   # make n really old
 
-def update(n, visited={}):
+def update(n):
     if n not in age:
         error(f'{n} does not exist')
     if n not in names:
